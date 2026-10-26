@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee & Children Information Form</title>
+    <!-- App installable settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="apple-touch-icon" href="icon.png">
+    
     <!-- html2pdf Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -88,6 +93,20 @@
             margin-top: 15px;
         }
         .btn-pdf:hover { background-color: #059669; }
+
+        .btn-clear {
+            width: 100%;
+            background-color: #ef4444;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-clear:hover { background-color: #dc2626; }
 
         .preview-table {
             width: 100%;
@@ -184,6 +203,7 @@
     </table>
 
     <button type="button" class="btn-pdf" onclick="generatePDF()">Download PDF Report</button>
+    <button type="button" class="btn-clear" onclick="clearAllData()">Clear List (Reset)</button>
 </div>
 
 <!-- Hidden PDF Template -->
@@ -257,8 +277,15 @@
         }
     }
 
-    // Initialize inputs on page load
-    window.onload = renderChildInputs;
+    // Load saved data from LocalStorage on page load
+    window.onload = function() {
+        renderChildInputs();
+        const savedData = localStorage.getItem('employeeData');
+        if (savedData) {
+            employeeData = JSON.parse(savedData);
+            updatePreviewTable();
+        }
+    };
 
     function addRow() {
         const empName = document.getElementById('empName').value.trim();
@@ -286,6 +313,9 @@
 
         employeeData.push({ empName, childCount, childrenDetails });
 
+        // Save to browser LocalStorage automatically
+        localStorage.setItem('employeeData', JSON.stringify(employeeData));
+
         updatePreviewTable();
 
         // Form reset
@@ -308,6 +338,15 @@
             </tr>`;
             tbody.innerHTML += row;
         });
+    }
+
+    // Clear all saved data
+    function clearAllData() {
+        if (confirm('Are you sure you want to clear all saved records?')) {
+            employeeData = [];
+            localStorage.removeItem('employeeData');
+            updatePreviewTable();
+        }
     }
 
     function generatePDF() {
@@ -351,6 +390,19 @@
 
         html2pdf().from(element).set(options).save();
     }
+</script>
+
+<!-- Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('./sw.js').then(function(registration) {
+        console.log('ServiceWorker registration successful');
+      }, function(err) {
+        console.log('ServiceWorker registration failed: ', err);
+      });
+    });
+  }
 </script>
 
 </body>

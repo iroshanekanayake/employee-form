@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee & Children Information Form</title>
+    <!-- html2pdf Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        body {
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            background: #ffffff;
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #1e293b;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #475569;
+            font-size: 14px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #fff;
+        }
+        .child-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .child-box h4 {
+            margin: 0 0 10px 0;
+            color: #2563eb;
+            font-size: 14px;
+        }
+        .btn-add {
+            width: 100%;
+            background-color: #2563eb;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-add:hover { background-color: #1d4ed8; }
+        
+        .btn-pdf {
+            width: 100%;
+            background-color: #10b981;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .btn-pdf:hover { background-color: #059669; }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 12px;
+        }
+        .preview-table th, .preview-table td {
+            border: 1px solid #cbd5e1;
+            padding: 6px;
+            text-align: center;
+        }
+        .preview-table th { background-color: #f1f5f9; }
+
+        /* PDF Layout (Strict A4 Layout) */
+        #pdf-wrapper {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+        }
+        #pdf-template {
+            width: 190mm; /* A4 printable width */
+            background: white;
+            padding: 10mm;
+            font-family: Arial, sans-serif;
+            color: #000;
+        }
+        .company-header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+        .company-header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+        .company-header p {
+            margin: 3px 0 0 0;
+            font-size: 12px;
+        }
+        .pdf-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+        .pdf-table th, .pdf-table td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: center;
+        }
+        .pdf-table th {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Employee & Children Information</h2>
+    
+    <div class="form-group">
+        <label for="empName">Employee Full Name:</label>
+        <input type="text" id="empName" placeholder="Enter employee name">
+    </div>
+
+    <div class="form-group">
+        <label for="childCount">Number of Children:</label>
+        <select id="childCount" onchange="renderChildInputs()">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+        </select>
+    </div>
+
+    <!-- Children input fields container -->
+    <div id="childrenContainer"></div>
+
+    <button type="button" class="btn-add" onclick="addRow()">Add to List</button>
+
+    <!-- Preview Table -->
+    <table class="preview-table" id="previewTable">
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Employee Name</th>
+                <th>Children Count</th>
+                <th>Child Name & Grade/Year</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <button type="button" class="btn-pdf" onclick="generatePDF()">Download PDF Report</button>
+</div>
+
+<!-- Hidden PDF Template -->
+<div id="pdf-wrapper">
+    <div id="pdf-template">
+        <div class="company-header">
+            <h1>WINWIL COMPANY (PVT) LTD</h1>
+            <p>Employee Children Details Report</p>
+        </div>
+        
+        <div style="font-size: 13px; line-height: 1.4;">
+            <p><strong>Date:</strong> <span id="lblDate"></span></p>
+            <p>The Manager,<br>Lion Brewery Ceylon PLC,<br>Biyagama.</p>
+            <p>Dear Sir,</p>
+            <p>Below mentioned employees and their children are working/studying under Winwil Co.(PVT) Ltd.</p>
+            
+            <table class="pdf-table">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">No</th>
+                        <th style="width: 35%;">Employee Name</th>
+                        <th style="width: 12%;">No. of Children</th>
+                        <th style="width: 30%;">Child Name</th>
+                        <th style="width: 15%;">Child Year / Grade</th>
+                    </tr>
+                </thead>
+                <tbody id="pdfTableBody"></tbody>
+            </table>
+            
+            <p style="margin-top: 30px;">Thank You,</p>
+            <p style="margin-top: 25px;">..................................................<br>Authorized Signature</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    let employeeData = [];
+
+    // Grade options function (0 to 13 in English)
+    function getGradeOptionsHtml() {
+        let options = '<option value="0 (Pre-School)">0 (Pre-School)</option>';
+        for (let i = 1; i <= 13; i++) {
+            options += `<option value="Grade ${i}">Grade ${i}</option>`;
+        }
+        return options;
+    }
+
+    // Render input fields based on children count
+    function renderChildInputs() {
+        const count = parseInt(document.getElementById('childCount').value);
+        const container = document.getElementById('childrenContainer');
+        container.innerHTML = '';
+
+        for (let i = 1; i <= count; i++) {
+            const childHtml = `
+                <div class="child-box">
+                    <h4>Child ${i} Details</h4>
+                    <div class="form-group">
+                        <label>Child Name:</label>
+                        <input type="text" class="child-name-input" placeholder="Child ${i} name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Child Year / Grade (0-13):</label>
+                        <select class="child-year-input">
+                            ${getGradeOptionsHtml()}
+                        </select>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += childHtml;
+        }
+    }
+
+    // Initialize inputs on page load
+    window.onload = renderChildInputs;
+
+    function addRow() {
+        const empName = document.getElementById('empName').value.trim();
+        const childCount = document.getElementById('childCount').value;
+        
+        const nameInputs = document.querySelectorAll('.child-name-input');
+        const yearInputs = document.querySelectorAll('.child-year-input');
+        
+        let childrenDetails = [];
+        let isValid = true;
+
+        nameInputs.forEach((input, index) => {
+            const cName = input.value.trim();
+            const cYear = yearInputs[index].value;
+            if (!cName) {
+                isValid = false;
+            }
+            childrenDetails.push({ childName: cName, childYear: cYear });
+        });
+
+        if (!empName || !isValid) {
+            alert('Please enter employee name and all children names correctly!');
+            return;
+        }
+
+        employeeData.push({ empName, childCount, childrenDetails });
+
+        updatePreviewTable();
+
+        // Form reset
+        document.getElementById('empName').value = '';
+        document.getElementById('childCount').value = '1';
+        renderChildInputs();
+    }
+
+    function updatePreviewTable() {
+        const tbody = document.getElementById('previewTable').querySelector('tbody');
+        tbody.innerHTML = '';
+        
+        employeeData.forEach((item, index) => {
+            let childInfoText = item.childrenDetails.map(c => `${c.childName} (${c.childYear})`).join('<br>');
+            const row = `<tr>
+                <td>${index + 1}</td>
+                <td>${item.empName}</td>
+                <td>${item.childCount}</td>
+                <td>${childInfoText}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    function generatePDF() {
+        if (employeeData.length === 0) {
+            alert('Please add at least one employee record!');
+            return;
+        }
+
+        document.getElementById('lblDate').innerText = new Date().toISOString().split('T')[0];
+
+        const pdfTbody = document.getElementById('pdfTableBody');
+        pdfTbody.innerHTML = '';
+
+        employeeData.forEach((item, index) => {
+            item.childrenDetails.forEach((child, cIndex) => {
+                let row = '<tr>';
+                
+                if (cIndex === 0) {
+                    row += `<td rowspan="${item.childrenDetails.length}">${String(index + 1).padStart(2, '0')}</td>`;
+                    row += `<td rowspan="${item.childrenDetails.length}">${item.empName}</td>`;
+                    row += `<td rowspan="${item.childrenDetails.length}">${item.childCount}</td>`;
+                }
+                
+                row += `<td>${child.childName}</td>`;
+                row += `<td>${child.childYear}</td>`;
+                row += '</tr>';
+                
+                pdfTbody.innerHTML += row;
+            });
+        });
+
+        const element = document.getElementById('pdf-template');
+
+        const options = {
+            margin:       [10, 10, 10, 10],
+            filename:     'Employee_Children_Report.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().from(element).set(options).save();
+    }
+</script>
+
+</body>
+</html>
+
